@@ -29,6 +29,7 @@
 #include <linux/device.h>
 #include <linux/dma-fence.h>
 #include <linux/dma-fence-chain.h>
+#include <linux/dma-mapping.h>
 #include <linux/err.h>
 #include <linux/errname.h>
 #include <linux/mutex.h>
@@ -216,6 +217,12 @@ void rust_helper_dma_fence_set_error(struct dma_fence *fence, int error)
 EXPORT_SYMBOL_GPL(rust_helper_dma_fence_set_error);
 
 #endif
+
+int rust_helper_dma_set_mask_and_coherent(struct device *dev, u64 mask)
+{
+	return dma_set_mask_and_coherent(dev, mask);
+}
+EXPORT_SYMBOL_GPL(rust_helper_dma_set_mask_and_coherent);
 
 #ifdef CONFIG_DRM
 

@@ -17,6 +17,7 @@
 #include <linux/device.h>
 #include <linux/dma-fence.h>
 #include <linux/dma-fence-chain.h>
+#include <linux/dma-mapping.h>
 #include <kunit/test.h>
 #include <linux/errname.h>
 #include <linux/fs.h>
