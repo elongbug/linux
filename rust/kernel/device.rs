@@ -9,6 +9,7 @@ use crate::{
     error::Result,
     macros::pin_data,
     of, pin_init, pr_crit,
+    prelude::ENOMEM,
     str::CStr,
     sync::{lock::mutex, lock::Guard, LockClassKey, Mutex, UniqueArc},
 };
@@ -201,6 +202,25 @@ impl Device {
         // requirements.
         unsafe { Self::new(dev.raw_device()) }
     }
+
+    /// Open a new devres group for dev with id.
+    pub fn open_group(&self, id: *mut core::ffi::c_void) -> Result<Resource> {
+        // SAFETY: The requirements are satisfied by the existence of `RawDevice` and its safety
+        // requirements.
+        let id = unsafe {
+            // Keep the allocation flags as GFP_KERNEL, as currently all users
+            // are using this flag.
+            bindings::devres_open_group(self.raw_device(), id, bindings::GFP_KERNEL)
+        };
+
+        if id.is_null() {
+            return Err(ENOMEM);
+        }
+        Ok(Resource {
+            dev: self.raw_device(),
+            id,
+        })
+    }
 }
 
 // SAFETY: The device returned by `raw_device` is the one for which we hold a reference.
@@ -223,6 +243,26 @@ impl Clone for Device {
         Device::from_dev(self)
     }
 }
+
+/// Device Resource Management
+pub struct Resource {
+    dev: *mut bindings::device,
+    id: *mut core::ffi::c_void,
+}
+
+impl Drop for Resource {
+    /// Release resources in a devres group
+    fn drop(&mut self) {
+        // SAFETY: The resource was properly allocated by the Device
+        unsafe { bindings::devres_release_group(self.dev, self.id) };
+    }
+}
+
+// SAFETY: The API doesn't allow access to the internal pointers.
+unsafe impl Send for Resource {}
+
+// SAFETY: The API doesn't allow access to the internal pointers.
+unsafe impl Sync for Resource {}
 
 /// Device data.
 ///
