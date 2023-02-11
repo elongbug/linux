@@ -13,6 +13,8 @@
 #include <drm/drm_gem_shmem_helper.h>
 #include <drm/drm_ioctl.h>
 #include <linux/device.h>
+#include <linux/dma-fence.h>
+#include <linux/dma-fence-chain.h>
 #include <kunit/test.h>
 #include <linux/errname.h>
 #include <linux/fs.h>
