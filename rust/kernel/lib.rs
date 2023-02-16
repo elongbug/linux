@@ -13,6 +13,7 @@
 
 #![no_std]
 #![feature(allocator_api)]
+#![feature(associated_type_defaults)]
 #![feature(coerce_unsized)]
 #![feature(const_trait_impl)]
 #![feature(const_refs_to_cell)]
@@ -43,6 +44,7 @@ pub mod error;
 pub mod init;
 pub mod ioctl;
 pub mod of;
+pub mod platform;
 #[cfg(CONFIG_KUNIT)]
 pub mod kunit;
 pub mod prelude;
