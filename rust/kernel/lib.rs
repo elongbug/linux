@@ -42,6 +42,7 @@ pub mod drm;
 pub mod error;
 pub mod init;
 pub mod ioctl;
+pub mod of;
 #[cfg(CONFIG_KUNIT)]
 pub mod kunit;
 pub mod prelude;
