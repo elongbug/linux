@@ -42,6 +42,7 @@ pub mod driver;
 pub mod drm;
 pub mod error;
 pub mod init;
+pub mod io_mem;
 pub mod ioctl;
 pub mod of;
 pub mod platform;
