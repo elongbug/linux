@@ -4,6 +4,7 @@ use kernel::prelude::*;
 use kernel::{file,
              miscdev,
             };
+use kernel::io_buffer::IoBufferWriter;
 
 module! {
     type: Scull,
@@ -27,6 +28,29 @@ impl file::Operations for Scull {
     fn open(_context: &(), _file: &file::File) -> Result {
         pr_info!("File was opened\n");
         Ok(())
+    }
+
+    /*
+    fn read(
+        _data: <Self::Data as ForeignOwnable>::Borrowed<'_>,
+        _file: &File,
+        _writer: &mut impl IoBufferWriter,
+        _offset: u64,
+    ) -> Result<usize> {
+        Err(EINVAL)
+    }
+
+    // need to check below type
+    // <Self::Data as ForeignOwnable>::Borrowed<'_>
+    // type Borrowed<'a>;
+    */
+    fn read(_data: (),
+            _file: &file::File,
+            _writer: &mut impl IoBufferWriter,
+            _offset: u64,
+    ) -> Result<usize> {
+        pr_info!("File was read\n");
+        Ok(0)
     }
 }
 
