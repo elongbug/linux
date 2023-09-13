@@ -6,6 +6,8 @@ use kernel::{file,
             };
 use kernel::io_buffer::{IoBufferWriter,
                         IoBufferReader};
+//use kernel::sync::Ref;
+use kernel::sync::Arc;
 
 module! {
     type: Scull,
@@ -13,6 +15,11 @@ module! {
     author: "Rust for Linux Contributors",
     description: "Rust Scull sample",
     license: "GPL",
+}
+
+
+struct Device {
+    number: usize,
 }
 
 // latest version will have new pin macros
@@ -25,9 +32,12 @@ struct Scull {
 
 #[vtable]
 impl file::Operations for Scull {
+    type OpenData = Arc<Device>;
+
     //fn open(context: &Self::OpenData, file: &File) -> Result<Self::Data>;
-    fn open(_context: &(), _file: &file::File) -> Result {
-        pr_info!("File was opened\n");
+    fn open(context:&Arc<Device>, _file: &file::File) -> Result {
+        // context.number deref coercion does not work on rust-analyzer
+        pr_info!("File for device {} was opened\n", context.number);
         Ok(())
     }
 
@@ -81,7 +91,9 @@ impl kernel::Module for Scull {
         // latest version will have new pin macros
         // such as ... Box::pin_init(miscdev::Registration::new(fmt!("scull"), ()))?;
         // new_pinned(name: fmt::Arguments<'_>, open_data: T::OpenData) -> Result<Pin<Box<Self>>>
-        let reg = miscdev::Registration::new_pinned(fmt!("scull"), ())?;
+        let dev = Arc::try_new(Device {number: 0})?;
+        let reg = miscdev::Registration::new_pinned(fmt!("scull"), dev)?;
+
         Ok(Self{_dev: reg})
     }
 }
