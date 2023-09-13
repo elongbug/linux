@@ -4,7 +4,8 @@ use kernel::prelude::*;
 use kernel::{file,
              miscdev,
             };
-use kernel::io_buffer::IoBufferWriter;
+use kernel::io_buffer::{IoBufferWriter,
+                        IoBufferReader};
 
 module! {
     type: Scull,
@@ -52,6 +53,26 @@ impl file::Operations for Scull {
         pr_info!("File was read\n");
         Ok(0)
     }
+
+    /*
+    fn write(
+        _data: <Self::Data as ForeignOwnable>::Borrowed<'_>,
+        _file: &File,
+        _reader: &mut impl IoBufferReader,
+        _offset: u64,
+    ) -> Result<usize> {
+        Err(EINVAL)
+    }
+    */
+    fn write(_data: (),
+             _file: &file::File,
+             reader: &mut impl IoBufferReader,
+             _offset: u64
+    ) -> Result<usize> {
+        pr_info!("File was written\n");
+        Ok(reader.len())
+    }
+
 }
 
 impl kernel::Module for Scull {
