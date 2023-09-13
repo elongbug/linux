@@ -7,7 +7,8 @@ use kernel::{file,
 use kernel::io_buffer::{IoBufferWriter,
                         IoBufferReader};
 //use kernel::sync::Ref;
-use kernel::sync::Arc;
+use kernel::sync::{Arc,
+                   ArcBorrow};
 
 module! {
     type: Scull,
@@ -33,12 +34,13 @@ struct Scull {
 #[vtable]
 impl file::Operations for Scull {
     type OpenData = Arc<Device>;
+    type Data = Arc<Device>;
 
     //fn open(context: &Self::OpenData, file: &File) -> Result<Self::Data>;
-    fn open(context:&Arc<Device>, _file: &file::File) -> Result {
+    fn open(context:&Arc<Device>, _file: &file::File) -> Result<Arc<Device>> {
         // context.number deref coercion does not work on rust-analyzer
         pr_info!("File for device {} was opened\n", context.number);
-        Ok(())
+        Ok(context.clone())
     }
 
     /*
@@ -55,12 +57,13 @@ impl file::Operations for Scull {
     // <Self::Data as ForeignOwnable>::Borrowed<'_>
     // type Borrowed<'a>;
     */
-    fn read(_data: (),
+    fn read(data: ArcBorrow<'_, Device>,
             _file: &file::File,
             _writer: &mut impl IoBufferWriter,
             _offset: u64,
     ) -> Result<usize> {
-        pr_info!("File was read\n");
+        // data.number deref coercion does not work on rust-analyzer
+        pr_info!("File for device {} was read\n", data.number);
         Ok(0)
     }
 
@@ -74,12 +77,12 @@ impl file::Operations for Scull {
         Err(EINVAL)
     }
     */
-    fn write(_data: (),
+    fn write(data: ArcBorrow<'_, Device>,
              _file: &file::File,
              reader: &mut impl IoBufferReader,
              _offset: u64
     ) -> Result<usize> {
-        pr_info!("File was written\n");
+        pr_info!("File for device {} was written\n", data.number);
         Ok(reader.len())
     }
 
