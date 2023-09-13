@@ -51,9 +51,9 @@ impl Device {
             contents <- new_mutex!(Vec::new()),
         })
     */
-    fn try_new() -> Result<Arc<Self>> {
+    fn try_new(num: usize) -> Result<Arc<Self>> {
         let mut dev = Pin::from(UniqueArc::try_new(Self {
-            number: 0,
+            number: num,
             // SAFETY: `mutex_init!` is called below.
             contents: unsafe {Mutex::new(Vec::new())},
         })?);
@@ -71,7 +71,7 @@ impl Device {
 struct Scull {
     // latest version will have new pin macros
     //#[pin]
-    _dev: Pin<Box<miscdev::Registration<Scull>>>,
+    _devs: Vec<Pin<Box<miscdev::Registration<Scull>>>>,
 }
 
 #[vtable]
@@ -158,16 +158,22 @@ impl file::Operations for Scull {
 
 impl kernel::Module for Scull {
     fn init(_name: &'static CStr, module: &'static ThisModule) -> Result<Self> {
-        let lock = module.kernel_param_lock();
-        pr_info!("Hello world, {} devices!\n", nr_devs.read(&lock));
+        let count = {
+            let lock = module.kernel_param_lock();
+            (*nr_devs.read(&lock)).try_into()?
+        };
+        pr_info!("Hello world, {} devices!\n", count);
 
         // latest version will have new pin macros
         // such as ... Box::pin_init(miscdev::Registration::new(fmt!("scull"), ()))?;
         // new_pinned(name: fmt::Arguments<'_>, open_data: T::OpenData) -> Result<Pin<Box<Self>>>
+        let mut devs = Vec::try_with_capacity(count)?;
+        for i in 0..count {
+            let dev = Device::try_new(i)?;
+            let reg = miscdev::Registration::new_pinned(fmt!("scull{i}"), dev)?;
+            devs.try_push(reg)?;
+        }
 
-        let dev = Device::try_new()?;
-        let reg = miscdev::Registration::new_pinned(fmt!("scull"), dev)?;
-
-        Ok(Self{_dev: reg})
+        Ok(Self{_devs: devs})
     }
 }
