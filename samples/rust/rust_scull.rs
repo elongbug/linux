@@ -18,6 +18,13 @@ module! {
     author: "Rust for Linux Contributors",
     description: "Rust Scull sample",
     license: "GPL",
+    params: {
+        nr_devs: u32 {
+            default: 1,
+            permissions: 0o644,
+            description: "Number of scull devices",
+        },
+    },
 }
 
 // latest version will have new pin macros
@@ -150,8 +157,10 @@ impl file::Operations for Scull {
 }
 
 impl kernel::Module for Scull {
-    fn init(_name: &'static CStr, _module: &'static ThisModule) -> Result<Self> {
-        pr_info!("Hello world!\n");
+    fn init(_name: &'static CStr, module: &'static ThisModule) -> Result<Self> {
+        let lock = module.kernel_param_lock();
+        pr_info!("Hello world, {} devices!\n", nr_devs.read(&lock));
+
         // latest version will have new pin macros
         // such as ... Box::pin_init(miscdev::Registration::new(fmt!("scull"), ()))?;
         // new_pinned(name: fmt::Arguments<'_>, open_data: T::OpenData) -> Result<Pin<Box<Self>>>
