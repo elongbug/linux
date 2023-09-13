@@ -73,9 +73,13 @@ impl file::Operations for Scull {
     type Data = Arc<Device>;
 
     //fn open(context: &Self::OpenData, file: &File) -> Result<Self::Data>;
-    fn open(context:&Arc<Device>, _file: &file::File) -> Result<Arc<Device>> {
+    fn open(context:&Arc<Device>, file: &file::File) -> Result<Arc<Device>> {
         // context.number deref coercion does not work on rust-analyzer
         pr_info!("File for device {} was opened\n", context.number);
+
+        if file.flags() & file::flags::O_ACCMODE == file::flags::O_WRONLY {
+            context.contents.lock().clear();
+        }
 
         Ok(context.clone())
     }
@@ -106,7 +110,7 @@ impl file::Operations for Scull {
         let vec = data.contents.lock();
         let len = core::cmp::min(writer.len(), vec.len().saturating_sub(offset));
         writer.write_slice(&vec[offset..][..len])?;  // => is it the combination of &vec[offset..] and &vec[..len] ?
-        //writer.write_slice(&vec[offset..len])?;  // => what is the difference between &vec[offset..][..len] and &vec[offset..len] ?
+                                                     // make vec slice size as len?
         pr_info!("File for device {} was read size: {}\n", data.number, len);
 
         Ok(len)
@@ -125,17 +129,22 @@ impl file::Operations for Scull {
     fn write(data: ArcBorrow<'_, Device>,
              _file: &file::File,
              reader: &mut impl IoBufferReader,
-             _offset: u64
+             offset: u64
     ) -> Result<usize> {
         //pr_info!("File for device {} was written\n", data.number);
-        let copy = reader.read_all()?;
+        let offset = offset.try_into()?;
+        let len = reader.len();
+        let new_len = len.checked_add(offset).ok_or(EINVAL)?;
+        let mut vec = data.contents.lock();
+        if new_len > vec.len() {
+            vec.try_resize(new_len, 0)?;
+        }
 
-        let mut contents = data.contents.lock();
-        *contents = copy;
+        reader.read_slice(&mut vec[offset..][..len])?;
 
-        pr_info!("File for device {} was written size: {}\n", data.number, contents.len());
+        pr_info!("File for device {} was written size: {}\n", data.number, len);
 
-        Ok(contents.len())
+        Ok(len)
     }
 
 }
