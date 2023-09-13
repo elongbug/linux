@@ -85,6 +85,12 @@ const char *rust_helper_errname(int err)
 }
 EXPORT_SYMBOL_GPL(rust_helper_errname);
 
+void rust_helper_mutex_lock(struct mutex *lock)
+{
+	mutex_lock(lock);
+}
+EXPORT_SYMBOL_GPL(rust_helper_mutex_lock);
+
 void rust_helper_xa_init_flags(struct xarray *xa, gfp_t flags)
 {
 	xa_init_flags(xa, flags);
